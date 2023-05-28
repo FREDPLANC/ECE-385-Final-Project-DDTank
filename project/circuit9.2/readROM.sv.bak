@@ -1,0 +1,65 @@
+module readROM(
+                input logic [9:0] DrawX,DrawY,
+                input logic [31:0] table_val,
+                output logic [3:0] color,
+                output logic exist
+);
+
+
+		 
+	reg [3:0] mem [0:450]; // OCM 内存数组
+	reg mem_co [0:450]; // OCM 内存数组
+
+	//reg [31:0] table_ele [0:1499]; // 存储器数组，大小为 1500 个 32 位单元
+
+	//***********************************************************************************
+	//initial part
+	initial
+	begin
+		 $readmemh("sprite_bytes/redRl.txt", mem,0,440);  
+		 $readmemb("sprite_bytes/LlColide.txt", mem_co,0,440); 
+	end
+
+    always_comb
+	begin
+	//color_exist = 64'b0;
+
+			unique case (table_val[31:26])
+			6'b000000:
+			begin
+			color = 4'b0100;
+			//table_true[j] = 1'b0;
+			exist = 6'b0;
+			end
+			6'b000001:		
+			begin
+			if((DrawX >=table_val[23:14]) && (DrawX < (table_val[23:14] + 21)) && (DrawY >=table_val[13:4]) && (DrawY < (table_val[13:4] + 21)) && (~mem_co[(DrawY-table_val[13:4])*21 + (DrawX-table_val[23:14] )]))
+				begin
+					//temp_write_2 = mem[(DrawY-0)*21 + (DrawX-0)]<<(((DrawX)%8)*4);
+						//table_color[j] = mem[(DrawY-table_val[j][13:4])*21 + (DrawX-table_val[j][23:14])];
+						//table_color[0] = mem[(DrawY-table_val[0][13:4])*21 + (DrawX-table_val[0][23:14])];
+						color = 4'b0111;
+						//color_exist[table_val[j][31:26]] = 1'b1;
+						exist = table_val[31:26];
+					
+				end
+				else 
+				begin
+					//temp_write_2 = 32'h0000;
+						color = 4'b0011;
+						exist = 6'b0;
+				end
+			end
+
+			default:	
+				begin 
+				color = 4'b0010;
+				exist = 6'b0;
+				end
+			endcase
+	end
+
+
+
+
+endmodule

@@ -1,0 +1,129 @@
+#include "CannonBall.h"
+#include "math.h"
+
+void cannonBallInit(){
+    // Cannon Ball initialization
+    cannonBall.x_pos = 0;
+    cannonBall.y_pos = 0;
+    cannonBall.x_prev = 0;
+    cannonBall.y_prev = 0;
+    cannonBall.v_x = 0;
+    cannonBall.v_y = 0;
+    cannonBall.state = 0;
+    cannonBall.explodingCount = EXPLOSION_DURATION;
+    cannonBall.chargingTimeCount = 0;
+    cannonBall.fired_v_x = 0;
+    cannonBall.fired_v_y = 0;
+    cannonBall.target = -1;
+    cannonBall.angle = FIRING_ANGLE_MIN;
+    cannonBall.magic = 0; // 0 means not magic, just normal
+    return;
+}
+
+void cannonBallCharging(){
+    cannonBall.state = 1;
+    if(cannonBall.chargingTimeCount < CHARGING_MAXIMUM_COUNT) cannonBall.chargingTimeCount += 1;
+    // printf("%d CannonBall Charging Time \n" , cannonBall.chargingTimeCount);
+    return;
+}
+
+void cannonBallFiring(int next_player, int posture, int player_x, int player_y, struct player* playerStruct){ // directly pick from TurningState; Posture is the posture of player 
+    cannonBall.target = next_player;
+    cannonBall.state = 2;
+    int chargingTable[5] = {CHARGING_LEVEL_1, CHARGING_LEVEL_2, CHARGING_LEVEL_3, CHARGING_LEVEL_4, CHARGING_LEVEL_5};
+    int intensity = chargingTable[cannonBall.chargingTimeCount / (CHARGING_COUNT_INTERVAL)];
+    double convertedAngle;
+    // printf("The intensity is %d \n", intensity);
+    switch(posture){
+        case 0: // face left
+            convertedAngle = cannonBall.angle*PI/180;
+            // cannonBall.fired_v_x = -intensity*cos(convertedAngle);
+            // cannonBall.fired_v_y = intensity*sin(convertedAngle);
+            cannonBall.v_x = -intensity*cos(convertedAngle);
+            cannonBall.v_y = intensity*sin(convertedAngle);
+            break;
+        case 1: // face right
+            convertedAngle = cannonBall.angle*PI/180;
+            // cannonBall.fired_v_x = intensity*cos(convertedAngle);
+            // cannonBall.fired_v_y = intensity*sin(convertedAngle);
+            cannonBall.v_x = intensity*cos(convertedAngle);
+            cannonBall.v_y = intensity*sin(convertedAngle);
+            break;
+        case 2: // uphill left
+            convertedAngle = (cannonBall.angle - 30)*PI/180;
+            // cannonBall.fired_v_x = -intensity*cos(convertedAngle);
+            // cannonBall.fired_v_y = intensity*sin(convertedAngle);
+            cannonBall.v_x = -intensity*cos(convertedAngle);
+            cannonBall.v_y = intensity*sin(convertedAngle);
+            break;
+        case 3: // uphill right
+            convertedAngle = (cannonBall.angle + 30)*PI/180;
+            // cannonBall.fired_v_x = intensity*cos(convertedAngle);
+            // cannonBall.fired_v_y = intensity*sin(convertedAngle);
+            cannonBall.v_x = intensity*cos(convertedAngle);
+            cannonBall.v_y = intensity*sin(convertedAngle);
+            break;
+        case 4: // downhill left
+            convertedAngle = (cannonBall.angle + 30)*PI/180;
+            // cannonBall.fired_v_x = -intensity*cos(convertedAngle);
+            // cannonBall.fired_v_y = intensity*sin(convertedAngle);
+            cannonBall.v_x = -intensity*cos(convertedAngle);
+            cannonBall.v_y = intensity*sin(convertedAngle);
+            break;
+        case 5: // downhill right
+            convertedAngle = (cannonBall.angle - 30)*PI/180;
+            // cannonBall.fired_v_x = intensity*cos(convertedAngle);
+            // cannonBall.fired_v_y = intensity*sin(convertedAngle);
+            cannonBall.v_x = intensity*cos(convertedAngle);
+            cannonBall.v_y = intensity*sin(convertedAngle);
+            break;
+    }
+    // pay attention!!! The coordinate here is the center coordinate of the player
+    cannonBall.x_pos = player_x;
+    cannonBall.x_prev = player_x;
+    cannonBall.y_pos = player_y;
+    cannonBall.y_prev = player_y;
+
+    if((playerStruct->magic == 1)){
+        if(playerStruct->direction <= 1){
+            cannonBall.magic = 1;
+            playerStruct->x_prev = playerStruct->x_pos;
+            playerStruct->y_prev = playerStruct->y_pos;
+        }  // this is the magic cannonball
+        else playerStruct->magic = 0;
+    }
+    // printf("The calculated V_x %d\n",cannonBall.v_x );
+    // printf("The calculated V_y %d\n",cannonBall.v_y );
+    return;
+    
+}
+
+void cannonBallAngle(int keycode){
+    if(keycode == KEY_UP){ // raise the angle
+        if(cannonBall.angle < FIRING_ANGLE_MAX) cannonBall.angle += FIRING_ANGLE_INTERVAL;
+    }
+    else{ // down the angle
+        if(cannonBall.angle > FIRING_ANGLE_MIN) cannonBall.angle -= FIRING_ANGLE_INTERVAL;
+    }
+    // printf("The cannBall angle now is %d \n", cannonBall.angle);
+    return;
+}
+
+int isLegalCannonBall(){  // 0 for not legal
+    int ball_left, ball_right, ball_top, ball_down;
+    ball_left = cannonBall.x_pos-CANNONBALL_SIZE/2;
+    ball_right = cannonBall.x_pos+CANNONBALL_SIZE/2;
+    ball_top = cannonBall.y_pos-CANNONBALL_SIZE/2;
+    ball_down = cannonBall.y_pos+CANNONBALL_SIZE/2;
+
+    if((ball_left < GAME_LEFTEDGE) || (ball_right > GAME_RIGHTEDGE) || (ball_down < GAME_DOWNEDGE) || (ball_top > GAME_HEIGHT)){ // not legal
+        return 0;
+    }
+    if((ball_left + cannonBall.v_x < GAME_LEFTEDGE) || (ball_right + cannonBall.fired_v_x > GAME_RIGHTEDGE)){ // not legal
+        return 0;
+    }
+    return 1;
+
+}
+
+

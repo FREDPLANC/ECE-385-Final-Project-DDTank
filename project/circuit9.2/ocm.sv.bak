@@ -1,0 +1,28 @@
+//Verilog HDL Single-Clock True Dual-Port Synchronous RAM
+module ocm(
+	input [7:0] avl_writein, vga_writein,		//data to be written
+	input [9:0] avl_addr, vga_addr,				//address to be written to 2^10 = 1024
+	input avl_we, vga_we, clk,
+	output reg [7:0] avl_readout, vga_readout	//data to be readout
+);
+
+parameter DATA_WIDTH = 8;
+parameter ADDR_WIDTH = 10;
+
+reg [DATA_WIDTH-1:0] ram[2**ADDR_WIDTH-1:0];
+
+always @ (posedge clk)
+begin //AVL port
+	if (avl_we)
+		ram[avl_addr] <= avl_writein;
+	avl_readout <= ram[avl_addr];
+end
+
+always @ (posedge clk) 
+begin
+	if (vga_we)
+		ram[vga_addr] <= vga_writein;
+	vga_readout <= ram[vga_addr];
+end
+
+endmodule

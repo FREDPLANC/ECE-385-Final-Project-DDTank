@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">&#x0A;<refactoring comment="Delete resource &apos;lab9_vga&apos;" deleteContents="true" description="Delete resource &apos;lab9_vga&apos;" element1="/lab9_vga" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1681895358206"/>&#x0A;<refactoring comment="Delete resource &apos;lab9_vga_bsp&apos;" deleteContents="true" description="Delete resource &apos;lab9_vga_bsp&apos;" element1="/lab9_vga_bsp" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1681895363063"/>
+</session>

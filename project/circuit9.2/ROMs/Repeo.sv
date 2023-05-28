@@ -1,0 +1,204 @@
+
+module repeoROM(
+                input logic [9:0] DrawX,DrawY,
+                input logic [31:0] table_val,
+                output logic [3:0] color,
+                output logic [5:0] exist
+);
+			 
+	reg [3:0] Rlpeo [0:450]; // OCM 内存数组
+	reg [3:0] Rrpeo [0:450]; // OCM 内存数组
+
+    reg [3:0] dLeftR [0:1100]; // OCM 内存数组
+    reg [3:0] dRightR [0:1100]; // OCM 内存数组
+    reg [3:0] uLeftR [0:1100]; // OCM 内存数组
+    reg [3:0] uRightR [0:1100]; // OCM 内存数组
+
+	reg Left_co [0:450]; // OCM 内存数组
+	reg Right_co [0:450]; // OCM 内存数组
+
+	reg downLeft_co [0:1100]; // OCM 内存数组
+	reg downRight_co [0:1100]; // OCM 内存数组
+	reg upLeft_co [0:1100]; // OCM 内存数组
+	reg upRight_co [0:1100]; // OCM 内存数组
+	
+
+
+	//***********************************************************************************
+	//initial part
+	initial
+	begin
+        $readmemh("sprite_bytes/redRl.txt", Rlpeo); 
+		$readmemh("sprite_bytes/redRr.txt", Rrpeo); 
+
+        $readmemh("sprite_bytes/downhillLeftRed.txt", dLeftR); 
+        $readmemh("sprite_bytes/downhillRightRed.txt", dRightR); 
+        $readmemh("sprite_bytes/uphillLeftRed.txt", uLeftR);
+        $readmemh("sprite_bytes/uphillRightRed.txt", uRightR);
+
+		$readmemb("sprite_bytes/LlColide.txt", Left_co); 
+		$readmemb("sprite_bytes/RrColide.txt", Right_co);
+		$readmemb("sprite_bytes/downhillLeftColide.txt", downLeft_co); 
+		$readmemb("sprite_bytes/downhillRightColide.txt", downRight_co); 
+		$readmemb("sprite_bytes/uphillLeftColide.txt", upLeft_co); 
+		$readmemb("sprite_bytes/uphillRightColide.txt", upRight_co); 
+		 
+	end
+
+  always_ff @(DrawX)
+	begin
+
+			unique case (table_val[31:26])
+			6'b000000:
+			begin
+			color <= 4'b0100;
+			exist <= 6'b0;
+			end
+
+
+			//red player
+			6'b001010:		
+			begin
+			 if((DrawX >=((table_val[23:14] >= 21)?(table_val[23:14] - 21):0)) && (DrawX < (table_val[23:14])) && (DrawY >=table_val[13:4]) && (DrawY < (table_val[13:4] + 21))  )
+				begin
+				if((~Left_co[(DrawY-table_val[13:4])*21 + (DrawX + 21 -table_val[23:14] )]))
+				begin
+						color <= Rlpeo[(DrawY-table_val[13:4])*21 + (DrawX + 21 -table_val[23:14])];
+						exist <= table_val[31:26];
+				end
+				else
+				begin
+						color <= 4'b0011;
+						exist <= 6'b0;
+				end
+				end
+				else 
+				begin
+					//temp_write_2 = 32'h0000;
+						color <= 4'b0011;
+						exist <= 6'b0;
+				end
+			end
+			6'b001011:		
+			begin
+			 if((DrawX >=((table_val[23:14] >= 21)?(table_val[23:14] - 21):0)) && (DrawX < (table_val[23:14])) && (DrawY >=table_val[13:4]) && (DrawY < (table_val[13:4] + 21))  )
+				begin
+				if((~Right_co[(DrawY-table_val[13:4])*21 + (DrawX + 21 -table_val[23:14] )]))
+				begin
+						color <= Rrpeo[(DrawY-table_val[13:4])*21 + (DrawX + 21 -table_val[23:14])];
+						exist <= table_val[31:26];
+				end
+				else
+				begin
+						color <= 4'b0011;
+						exist <= 6'b0;
+				end
+				end
+				else 
+				begin
+					//temp_write_2 = 32'h0000;
+						color <= 4'b0011;
+						exist <= 6'b0;
+				end
+			end
+			6'b001100:		
+			begin
+			 if((DrawX >=((table_val[23:14] >= 33)?(table_val[23:14] - 33):0)) && (DrawX < (table_val[23:14])) && (DrawY >=table_val[13:4]) && (DrawY < (table_val[13:4] + 33))  )
+				begin
+				if((~upLeft_co[(DrawY-table_val[13:4])*33 + (DrawX + 33 -table_val[23:14] )]))
+				begin
+						color <= uLeftR[(DrawY-table_val[13:4])*33 + (DrawX + 33 -table_val[23:14])];
+						exist <= table_val[31:26];
+				end
+				else
+				begin
+						color <= 4'b0011;
+						exist <= 6'b0;
+				end
+				end
+				else 
+				begin
+					//temp_write_2 = 32'h0000;
+						color <= 4'b0011;
+						exist <= 6'b0;
+				end
+			end
+			6'b001101:		
+			begin
+			 if((DrawX >=((table_val[23:14] >= 33)?(table_val[23:14] - 33):0)) && (DrawX < (table_val[23:14])) && (DrawY >=table_val[13:4]) && (DrawY < (table_val[13:4] + 33))  )
+				begin
+				if((~upRight_co[(DrawY-table_val[13:4])*33 + (DrawX + 33 -table_val[23:14] )]))
+				begin
+						color <= uRightR[(DrawY-table_val[13:4])*33 + (DrawX + 33 -table_val[23:14])];
+						exist <= table_val[31:26];
+				end
+				else
+				begin
+						color <= 4'b0011;
+						exist <= 6'b0;
+				end
+				end
+				else 
+				begin
+					//temp_write_2 = 32'h0000;
+						color <= 4'b0011;
+						exist <= 6'b0;
+				end
+			end
+			6'b001110:		
+			begin
+			 if((DrawX >=((table_val[23:14] >= 33)?(table_val[23:14] - 33):0)) && (DrawX < (table_val[23:14])) && (DrawY >=table_val[13:4]) && (DrawY < (table_val[13:4] + 33))  )
+				begin
+				if((~downLeft_co[(DrawY-table_val[13:4])*33 + (DrawX + 33 -table_val[23:14] )]))
+				begin
+						color <= dLeftR[(DrawY-table_val[13:4])*33 + (DrawX + 33 -table_val[23:14])];
+						exist <= table_val[31:26];
+				end
+				else
+				begin
+						color <= 4'b0011;
+						exist <= 6'b0;
+				end
+				end
+				else 
+				begin
+					//temp_write_2 = 32'h0000;
+						color <= 4'b0011;
+						exist <= 6'b0;
+				end
+			end
+			6'b001111:		
+			begin
+			 if((DrawX >=((table_val[23:14] >= 33)?(table_val[23:14] - 33):0)) && (DrawX < (table_val[23:14])) && (DrawY >=table_val[13:4]) && (DrawY < (table_val[13:4] + 33))  )
+				begin
+				if((~downRight_co[(DrawY-table_val[13:4])*33 + (DrawX + 33 -table_val[23:14] )]))
+				begin
+						color <= dRightR[(DrawY-table_val[13:4])*33 + (DrawX + 33 -table_val[23:14])];
+						exist <= table_val[31:26];
+				end
+				else
+				begin
+						color <= 4'b0011;
+						exist <= 6'b0;
+				end
+				end
+				else 
+				begin
+					//temp_write_2 = 32'h0000;
+						color <= 4'b0011;
+						exist <= 6'b0;
+				end
+			end
+			
+			
+			default:	
+				begin 
+				color <= 4'b0100;
+				exist <= 6'b0;
+				end
+			endcase
+	end
+
+
+
+endmodule

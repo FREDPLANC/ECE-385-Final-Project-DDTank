@@ -1,0 +1,64 @@
+#ifndef STARTINTERFACE_H_
+#define STARTINTERFACE_H_
+
+
+#include "text_mode_vga_color.h"
+
+
+// 0: player A's turn; 
+// 1: Freezing turn(both player cannot move, waiting for cannon ball exploding);
+// 2: player B's turn;
+
+struct game_State gameState;
+struct strengthBar playerstrength;
+
+volatile struct TEXT_VGA_STRUCT InitialgameBuffer;
+volatile struct TEXT_VGA_STRUCT IngameBuffer;
+
+volatile struct player redPlayer;
+volatile struct player bluePlayer;
+// alt_u8 red_player_right_buffer[PLAYER_HEIGHT*PLAYER_WIDTH];
+// alt_u8 blue_player_right_buffer[PLAYER_HEIGHT*PLAYER_WIDTH];
+// alt_u8 red_player_left_buffer[PLAYER_HEIGHT*PLAYER_WIDTH];
+// alt_u8 blue_player_left_buffer[PLAYER_HEIGHT*PLAYER_WIDTH];
+// alt_u8 cannon_buffer[CANNON_SIZE * CANNON_SIZE];
+//struct player redPlayer;
+
+static struct playerTurningState TurnState;
+struct cannon_Ball cannonBall;
+void updatePlayerTurn();
+void playerTurnInit();
+
+void gameInitStateHandler(int keycode);
+void gameStartStateHandler(int keycode);
+void gameEndStateHandler(int keycode);
+
+void gameInit();
+
+void gameInterface(int keycode);
+
+void attackingGround(int cent_x, int cent_y);
+void explodingHarm();
+
+void fillBufferPlayers();  // 2 objects
+void fillBufferCannon();   // 1 objects
+void fillBufferExplode();  // 1 objects
+void fillBufferHealth();   // 10 objects
+void fillBufferAngle(int player);    // 1 objects
+void fillBufferCharging(); // 20 objects
+void fillBufferStrength(int player); // 10 objects
+void fillBufferWord();     // 3 objects
+void fillBufferArrow(int player);    // 1 objects
+void fillBufferCrater(int x, int y);
+
+
+void updatedPlayerMovement(int keycode,  struct player* playerStruct);
+void updateFalling(struct player* playerStruct);
+void updatefallingPoint(struct player* playerStruct);
+void updateMovementCracter(struct TEXT_VGA_STRUCT* buffer);
+void fillBufferFlying(int now_player);
+void updateBluePlayerCamera();
+void updateRedPlayerCamera();
+void findexplosionPoint();
+void updateMagicMoving(struct player* playerStruct);
+#endif

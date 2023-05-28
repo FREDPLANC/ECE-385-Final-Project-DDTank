@@ -1,0 +1,234 @@
+/************************************************************************
+Avalon-MM Interface VGA Text mode display
+
+Modified for DE2-115 board
+
+Register Map:
+0x000-0x0257 : VRAM, 80x30 (2400 byte, 600 word) raster order (first column then row)
+0x258        : control register
+
+VRAM Format:
+X->
+[ 31  30-24][ 23  22-16][ 15  14-8 ][ 7    6-0 ]
+[IV3][CODE3][IV2][CODE2][IV1][CODE1][IV0][CODE0]
+
+IVn = Draw inverse glyph
+CODEn = Glyph code from IBM codepage 437
+
+Control Register Format:
+[[31-25][24-21][20-17][16-13][ 12-9][ 8-5 ][ 4-1 ][   0    ] 
+[[RSVD ][FGD_R][FGD_G][FGD_B][BKG_R][BKG_G][BKG_B][RESERVED]
+
+VSYNC signal = bit which flips on every Vsync (time for new frame), used to synchronize software
+BKG_R/G/B = Background color, flipped with foreground when IVn bit is set
+FGD_R/G/B = Foreground color, flipped with background when Inv bit is set
+
+************************************************************************/
+`define NUM_REGS 601 //80*30 characters / 4 characters per register
+`define CTRL_REG 600 //index of control register
+
+module vga_text_avl_interface (
+	// Avalon Clock Input, note this clock is also used for VGA, so this must be 50Mhz
+	// We can put a clock divider here in the future to make this IP more generalizable
+	input logic CLK,
+	
+	// Avalon Reset Input
+	input logic RESET,
+	
+	// Avalon-MM Slave Signals
+	input  logic AVL_READ,					// Avalon-MM Read
+	input  logic AVL_WRITE,					// Avalon-MM Write
+	input  logic AVL_CS,					// Avalon-MM Chip Select
+	input  logic [3:0] AVL_BYTE_EN,			// Avalon-MM Byte Enable
+	input  logic [9:0] AVL_ADDR,			// Avalon-MM Address
+	input  logic [31:0] AVL_WRITEDATA,		// Avalon-MM Write Data
+	output logic [31:0] AVL_READDATA,		// Avalon-MM Read Data
+	
+	// Exported Conduit (mapped to VGA port - make sure you export in Platform Designer)
+	output logic [3:0]  red, green, blue,	// VGA color channels (mapped to output pins in top-level)
+	output logic hs, vs,					// VGA HS/VS
+	output logic sync, blank, pixel_clk		// Required by DE2-115 video encoder
+);
+
+logic [31:0] LOCAL_REG       [`NUM_REGS]; // Registers
+//put other local variables here
+logic [9:0] DrawX,DrawY;
+logic [10:0] sprite_addr;
+logic [7:0] sprite_data;
+logic [31:0] read_buf,reg_value,color_value;
+logic pre_red,shape_size_x, shape_size_y, shape_x, shape_y,bit_num, value_index, inverse, reg_addr,is_ball;
+logic [6:0] data;
+
+
+
+
+//Declare submodules..e.g. VGA controller, ROMS, etc
+vga_controller vga(.Clk(CLK),
+					.Reset(RESET),
+					.*);
+font_rom mapping(.addr(sprite_addr), .data(sprite_data));
+   
+// Read and write from AVL interface to register block, note that READ waitstate = 1, so this should be in always_ff
+
+
+always_comb
+begin
+	if(RESET)
+	begin
+		for (int i=0;i<`NUM_REGS; i++)
+		begin
+			LOCAL_REG[i] = 32'h0;
+		end
+	end
+	else begin
+	if(AVL_CS & AVL_READ)
+	begin
+		read_buf =  LOCAL_REG[AVL_ADDR] ;
+	end
+	else begin
+		read_buf = 32'b0;
+	end
+
+	if(AVL_CS & AVL_WRITE)
+		begin
+			unique case (AVL_BYTE_EN)
+			1111: LOCAL_REG[AVL_ADDR] = AVL_WRITEDATA;
+			1100: LOCAL_REG[AVL_ADDR][31:16]  = AVL_WRITEDATA[31:16];
+			0011: LOCAL_REG[AVL_ADDR][15:0]  = AVL_WRITEDATA[15:0];	
+			1000: LOCAL_REG[AVL_ADDR][31:24]  = AVL_WRITEDATA[31:24];
+			0100: LOCAL_REG[AVL_ADDR][23:16]  = AVL_WRITEDATA[23:16];
+			0010: LOCAL_REG[AVL_ADDR][15:8]  = AVL_WRITEDATA[15:8];
+			0001: LOCAL_REG[AVL_ADDR][7:0]  = AVL_WRITEDATA[7:0];
+			default:
+				LOCAL_REG[AVL_ADDR] = LOCAL_REG[AVL_ADDR];
+			endcase
+		end
+	end
+end
+
+always_ff @(posedge CLK) begin
+		AVL_READDATA <= read_buf;
+end
+// 	if(RESET)
+// 	begin
+// 		for (int i=0;i<`NUM_REGS; i++)
+// 		begin
+// 			LOCAL_REG[i] <= 32'h0;
+// 		end
+// 	end
+// 	else begin
+// 		if(pre_red)
+// 		begin
+// 			AVL_READDATA = read_buf;
+// 			read_buf = 32'h0000;
+// 		end
+// 		else begin
+// 			AVL_READDATA = 32'h0;
+// 			read_buf = 32'h0000;
+// 		end
+
+// 		if(AVL_CS & AVL_READ)
+// 		begin
+// 			pre_red <= 1'b1;
+// 			read_buf <= LOCAL_REG[AVL_ADDR] ;
+// 		end
+// 		else
+// 		begin
+// 			pre_red = 1'b0;
+// 			read_buf = 32'h0 ;
+// 		end
+
+// 		if(AVL_CS & AVL_WRITE)
+// 		begin
+// 			unique case (AVL_BYTE_EN)
+// 			1111: LOCAL_REG[AVL_ADDR] = AVL_WRITEDATA;
+// 			1100: LOCAL_REG[AVL_ADDR][31:16]  <= AVL_WRITEDATA[31:16];
+// 			0011: LOCAL_REG[AVL_ADDR][15:0]  <= AVL_WRITEDATA[15:0];	
+// 			1000: LOCAL_REG[AVL_ADDR][31:24]  <= AVL_WRITEDATA[31:24];
+// 			0100: LOCAL_REG[AVL_ADDR][23:16]  <= AVL_WRITEDATA[23:16];
+// 			0010: LOCAL_REG[AVL_ADDR][15:8]  <= AVL_WRITEDATA[15:8];
+// 			0001: LOCAL_REG[AVL_ADDR][7:0]  <= AVL_WRITEDATA[7:0];
+// 			default:
+// 				LOCAL_REG[AVL_ADDR] <= LOCAL_REG[AVL_ADDR];
+// 			endcase
+// 		end
+// 	end
+// end
+
+
+//handle drawing (may either be combinational or sequential - or both).
+assign color_value = LOCAL_REG[600];
+
+always_ff @(posedge pixel_clk)
+begin
+	
+
+	
+	shape_x <= (DrawX / 8)*8;
+	shape_y <= (DrawY / 16)*16;
+	bit_num <= DrawX - shape_x;
+	reg_addr <= (DrawY / 16) * 20 + DrawX /32;
+	reg_value <= LOCAL_REG[reg_value];
+	value_index <= (DrawX/8) - (DrawX /32) * 4;
+	case (value_index)
+		0: 
+		begin
+			inverse <= reg_value[31];
+			data <= reg_value[30:24];
+		end
+		1: 
+		begin
+			inverse <= reg_value[23];
+			data <= reg_value[22:16];
+		end
+		2: 
+		begin
+			inverse <= reg_value[15];
+			data <= reg_value[14:8];
+		end
+		3: 
+		begin
+			inverse <= reg_value[7];
+			data <= reg_value[6:0];
+		end
+		default:
+		begin
+			inverse <= 1'b0;
+			data <= 7'b0;
+		end
+	endcase
+	sprite_addr <= 16 * data + DrawY -shape_size_y;
+
+end
+	always_comb
+	begin
+		if(inverse)
+		begin
+			if(data[DrawX-shape_x])
+			begin
+				red = color_value[12:9];
+				green = color_value[8:5];
+				blue = color_value[4:1];
+			end
+			else begin
+				red = color_value[24:21];
+				green = color_value[20:17];
+				blue = color_value[16:13];
+			end
+		end
+		else begin
+			if(data[DrawX-shape_x])
+			begin
+				red = color_value[24:21];
+				green = color_value[20:17];
+				blue = color_value[16:13];
+			end
+			else begin
+				red = color_value[12:9];
+				green = color_value[8:5];
+				blue = color_value[4:1];
+			end
+		end
+	end	
+
+endmodule

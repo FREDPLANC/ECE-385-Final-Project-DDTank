@@ -1,0 +1,18 @@
+12:43:06 **** Incremental Build of configuration Nios II for project LAB9 ****
+make all 
+Info: Building ../LAB9_bsp/
+D:/quartus/quartus/nios2eds/bin/gnu/H-x86_64-mingw32/bin/make --no-print-directory -C ../LAB9_bsp/
+[BSP build complete]
+Info: Compiling main.c to obj/default/main.o
+nios2-elf-gcc -xc -MP -MMD -c -I../LAB9_bsp//HAL/inc -I../LAB9_bsp/ -I../LAB9_bsp//drivers/inc  -pipe -D__hal__ -DALT_NO_INSTRUCTION_EMULATION -DALT_SINGLE_THREADED    -O0 -g -Wall   -mno-hw-div -mno-hw-mul -mno-hw-mulx -mgpopt=global  -o obj/default/main.o main.c
+Info: Linking LAB9.elf
+nios2-elf-g++  -T'../LAB9_bsp//linker.x' -msys-crt0='../LAB9_bsp//obj/HAL/src/crt0.o' -msys-lib=hal_bsp -L../LAB9_bsp/   -Wl,-Map=LAB9.map   -O0 -g -Wall   -mno-hw-div -mno-hw-mul -mno-hw-mulx -mgpopt=global  -o LAB9.elf obj/default/main.o obj/default/palette_test.o obj/default/text_mode_vga_color.o -lm -msys-lib=m
+nios2-elf-insert LAB9.elf --thread_model hal --cpu_name nios2_gen2_0 --qsys true --simulation_enabled false --id 0 --sidp 0x2028 --timestamp 1683951429 --stderr_dev jtag_uart_0 --stdin_dev jtag_uart_0 --stdout_dev jtag_uart_0 --sopc_system_name lab9_soc --quartus_project_dir "C:/Users/V-V-A/Desktop/cources/ECE385/lab/lab9/circuit9.2" --jdi ../..//output_files/lab9.jdi --sopcinfo C:/Users/V-V-A/Desktop/cources/ECE385/lab/lab9/circuit9.2/software/LAB9_bsp/../../lab9_soc.sopcinfo
+Info: (LAB9.elf) 64 KBytes program size (code + initialized data).
+Info:            130999 KBytes free for stack + heap.
+Info: Creating LAB9.objdump
+nios2-elf-objdump --disassemble --syms --all-header --source LAB9.elf >LAB9.objdump
+[LAB9 build complete]
+
+12:43:08 Build Finished (took 1s.609ms)
+
